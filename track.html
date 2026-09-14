@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Próximos Eventos</title>
+<style>
+  * {
+    box-sizing: border-box;
+  }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: black;
+    font-family: 'Segoe UI', Arial, sans-serif;
+  }
+
+  #status {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #ffffffaa;
+    font-size: clamp(14px, 2vw, 20px);
+    text-align: center;
+  }
+
+  #erro {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #ff8080;
+    font-size: clamp(13px, 1.8vw, 18px);
+    text-align: center;
+    max-width: 80%;
+  }
+
+  .track-wrapper {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    display: none;
+  }
+
+  .track {
+    display: flex;
+    white-space: nowrap;
+    will-change: transform;
+  }
+
+  .card {
+    display: flex;
+    align-items: center;
+    gap: clamp(12px, 2vw, 28px);
+    padding: clamp(20px, 3vw, 40px) clamp(30px, 5vw, 70px);
+    margin: 0 clamp(10px, 1.5vw, 24px);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 20px;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+    flex-shrink: 0;
+  }
+
+  .card .dot {
+    width: clamp(10px, 1.4vw, 18px);
+    height: clamp(10px, 1.4vw, 18px);
+    border-radius: 50%;
+    background: #4fd1c5;
+    box-shadow: 0 0 16px 4px rgba(79, 209, 197, 0.7);
+    flex-shrink: 0;
+  }
+
+  .card .info {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .card .evento {
+    color: #ffffff;
+    font-weight: 700;
+    font-size: clamp(18px, 2.6vw, 40px);
+    line-height: 1.1;
+  }
+
+  .card .data {
+    color: #fff;
+    font-weight: 500;
+    font-size: clamp(13px, 1.6vw, 22px);
+    letter-spacing: 0.03em;
+  }
+
+  .card .dias {
+    color: #ffd166;
+    font-size: clamp(11px, 1.3vw, 17px);
+    font-weight: 600;
+  }
+
+  .titulo-fixo {
+    position: fixed;
+    top: clamp(14px, 2.5vw, 30px);
+    left: clamp(14px, 2.5vw, 30px);
+    color: #ffffff;
+    font-size: clamp(16px, 2vw, 26px);
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    opacity: 0.85;
+    z-index: 2;
+  }
+
+  .fade-lados::before,
+  .fade-lados::after {
+    content: "";
+    position: fixed;
+    top: 0;
+    width: clamp(40px, 8vw, 160px);
+    height: 100%;
+    z-index: 3;
+    pointer-events: none;
+  }
+
+  .fade-lados::before {
+    left: 0;
+    background: linear-gradient(to right, #0f0c29, transparent);
+  }
+
+  .fade-lados::after {
+    right: 0;
+    background: linear-gradient(to left, #24243e, transparent);
+  }
+</style>
+</head>
+<body class="fade-lados">
+
+<div id="status">Carregando eventos...</div>
+<div id="erro"></div>
+
+<div class="track-wrapper" id="trackWrapper">
+  <div class="track" id="track"></div>
+</div>
+
+<script>
+  const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTz6WbJGl2lL5VtXLQzSpYW9f344gDZGX1GAawUUEiwxAfancJ84_SNqOcui5FB7x03taLUZMbKExhc/pub?output=csv";
+
+  // Velocidade da esteira em pixels por segundo
+  const VELOCIDADE = 60;
+
+  function parseCSV(texto) {
+    const linhas = texto.trim().split(/\r?\n/);
+    const cabecalho = linhas[0].split(",").map(c => c.trim());
+    const registros = [];
+
+    for (let i = 1; i < linhas.length; i++) {
+      if (!linhas[i].trim()) continue;
+      const valores = linhas[i].split(",").map(v => v.trim().replace(/^"|"$/g, ""));
+      const obj = {};
+      cabecalho.forEach((chave, idx) => {
+        obj[chave] = valores[idx] || "";
+      });
+      registros.push(obj);
+    }
+    return registros;
+  }
+
+  function parseDataBR(dataStr) {
+    // Formato esperado: DD/MM/AAAA
+    const [dia, mes, ano] = dataStr.split("/").map(Number);
+    return new Date(ano, mes - 1, dia);
+  }
+
+  function formatarDiasRestantes(data) {
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    const alvo = new Date(data);
+    alvo.setHours(0, 0, 0, 0);
+
+    const diffMs = alvo - hoje;
+    const diffDias = Math.round(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffDias > 1) return `Faltam ${diffDias} dias`;
+    if (diffDias === 1) return "É amanhã!";
+    if (diffDias === 0) return "É hoje!";
+    return `Aconteceu há ${Math.abs(diffDias)} dias`;
+  }
+
+  function criarCard(evento, dataStr) {
+    const data = parseDataBR(dataStr);
+    const card = document.createElement("div");
+    card.className = "card";
+
+    card.innerHTML = `
+      <div class="info">
+        <span class="evento">${evento}</span>
+        <span class="data">${dataStr}</span>
+        <span class="dias">${formatarDiasRestantes(data)}</span>
+      </div>
+    `;
+    return card;
+  }
+
+  let posicaoX = 0;
+  let larguraConjunto = 0;
+  let ultimoTimestamp = null;
+
+  function animar(timestamp) {
+    if (ultimoTimestamp === null) ultimoTimestamp = timestamp;
+    const deltaSegundos = (timestamp - ultimoTimestamp) / 1000;
+    ultimoTimestamp = timestamp;
+
+    posicaoX -= VELOCIDADE * deltaSegundos;
+
+    if (Math.abs(posicaoX) >= larguraConjunto) {
+      posicaoX += larguraConjunto;
+    }
+
+    document.getElementById("track").style.transform = `translateX(${posicaoX}px)`;
+    requestAnimationFrame(animar);
+  }
+
+  async function carregarEventos() {
+    const statusEl = document.getElementById("status");
+    const erroEl = document.getElementById("erro");
+    const wrapperEl = document.getElementById("trackWrapper");
+    const trackEl = document.getElementById("track");
+
+    try {
+      const resposta = await fetch(CSV_URL);
+      if (!resposta.ok) throw new Error(`Erro HTTP ${resposta.status}`);
+
+      const textoCSV = await resposta.text();
+      const registros = parseCSV(textoCSV);
+
+      // Ordena por data
+      registros.sort((a, b) => parseDataBR(a.Data) - parseDataBR(b.Data));
+
+      if (registros.length === 0) {
+        throw new Error("Nenhum evento encontrado na planilha.");
+      }
+
+      // Monta o conjunto de cards uma vez
+      const conjunto = document.createElement("div");
+      conjunto.style.display = "flex";
+      registros.forEach(reg => {
+        conjunto.appendChild(criarCard(reg.Evento, reg.Data));
+      });
+
+      // Duplica o conjunto para o loop ficar contínuo/sem costura
+      const conjuntoClone = conjunto.cloneNode(true);
+
+      trackEl.appendChild(conjunto);
+      trackEl.appendChild(conjuntoClone);
+
+      statusEl.style.display = "none";
+      wrapperEl.style.display = "flex";
+
+      // Espera o layout renderizar para medir a largura correta
+      requestAnimationFrame(() => {
+        larguraConjunto = conjunto.getBoundingClientRect().width;
+        requestAnimationFrame(animar);
+      });
+
+      // Recalcula a largura se a janela for redimensionada
+      window.addEventListener("resize", () => {
+        larguraConjunto = conjunto.getBoundingClientRect().width;
+      });
+
+    } catch (erro) {
+      statusEl.style.display = "none";
+      erroEl.style.display = "block";
+      erroEl.textContent = `Não foi possível carregar os eventos: ${erro.message}`;
+      console.error(erro);
+    }
+  }
+
+  carregarEventos();
+</script>
+
+</body>
+</html>
