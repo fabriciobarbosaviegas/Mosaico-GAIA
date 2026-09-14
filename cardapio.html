@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Cardápio</title>
+<style>
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    background: #ffffff;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  h1 {
+    color: #000000;
+    font-size: 22px;
+    font-weight: bold;
+    margin-bottom: 20px;
+  }
+
+  #status {
+    color: #555;
+    margin-bottom: 20px;
+    font-size: 14px;
+  }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    max-width: 500px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+  }
+
+  thead th {
+    background-color: #2E7D32;
+    color: white;
+    font-weight: bold;
+    text-align: center;
+    padding: 14px 10px;
+    border: 1px solid #D0D0D0;
+  }
+
+  tbody td {
+    padding: 12px 10px;
+    text-align: center;
+    border: 1px solid #D0D0D0;
+    font-size: 14px;
+  }
+
+  tbody tr:nth-child(even) {
+    background-color: #F5F9F5;
+  }
+
+  tbody tr:nth-child(odd) {
+    background-color: #ffffff;
+  }
+
+  #erro {
+    color: #B00020;
+    font-size: 14px;
+    max-width: 600px;
+    text-align: center;
+    margin-top: 20px;
+  }
+</style>
+</head>
+<body>
+
+<div id="status">Carregando...</div>
+<table id="tabela" style="display:none;">
+  <thead>
+    <tr><th>Prato</th></tr>
+  </thead>
+  <tbody id="corpoTabela"></tbody>
+</table>
+<div id="erro" style="display:none;"></div>
+
+<script>
+  const URL = "https://cobalto.ufpel.edu.br/dashboard/cardapios/cardapio/listaCardapios";
+
+  const params = new URLSearchParams({
+    "null": "",
+    "cmbRestaurante": 6,
+    "_search": "false",
+    "nd": Date.now(),
+    "rows": -1,
+    "page": 1,
+    "sidx": "refeicao asc, id",
+    "sord": "asc"
+  });
+
+  async function carregarCardapio() {
+    const statusEl = document.getElementById("status");
+    const erroEl = document.getElementById("erro");
+    const tabelaEl = document.getElementById("tabela");
+    const corpoTabela = document.getElementById("corpoTabela");
+    const tituloEl = document.getElementById("titulo");
+
+    try {
+      const resposta = await fetch(`${URL}?${params.toString()}`);
+
+      if (!resposta.ok) {
+        throw new Error(`Erro HTTP: ${resposta.status}`);
+      }
+
+      const dados = await resposta.json();
+      let rows = dados.rows || [];
+
+      // Ordena por refeição e ID
+      rows.sort((a, b) => {
+        if (a.refeicao !== b.refeicao) {
+          return a.refeicao < b.refeicao ? -1 : 1;
+        }
+        return a.id - b.id;
+      });
+
+      // Pega os 6 primeiros pratos
+      const linhas = rows.slice(0, 10).map(item => item.nome);
+
+      corpoTabela.innerHTML = "";
+      linhas.forEach(nome => {
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.textContent = nome;
+        tr.appendChild(td);
+        corpoTabela.appendChild(tr);
+      });
+
+      statusEl.style.display = "none";
+      tabelaEl.style.display = "table";
+
+    } catch (erro) {
+      statusEl.style.display = "none";
+      erroEl.style.display = "block";
+      erroEl.textContent = `Não foi possível carregar o cardápio: ${erro.message}. ` +
+        `Isso pode ocorrer por bloqueio de CORS do servidor ao acessar via navegador.`;
+      console.error(erro);
+    }
+  }
+
+  carregarCardapio();
+</script>
+
+</body>
+</html>

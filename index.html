@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Mosaico de Iframes</title>
+
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .grid {
+    display: grid;
+    width: 100vw;
+    height: 100vh;
+    grid-template-columns: 284fr 769fr 271fr;
+    grid-template-rows: 313fr 114fr 206fr;
+    grid-template-areas:
+      "yellow red   green"
+      "yellow red   blue"
+      "pink   pink  pink";
+    gap: 0;
+  }
+
+  .grid iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
+  }
+
+  .cell-1 { grid-area: red; }
+  .cell-2 { grid-area: yellow; }
+  .cell-3 { grid-area: green; }
+  .cell-4 { grid-area: blue; }
+  .cell-5 { grid-area: pink; }
+</style>
+</head>
+
+<body>
+
+<div class="grid">
+
+  <!-- Iframe 1 -->
+  <iframe
+    class="cell-1"
+    id="browserFrame"
+    src="https://example.com"
+    title="Navegador">
+  </iframe>
+
+  <iframe
+    class="cell-2"
+    src="weather.html"
+    title="Iframe 2"    scrolling="no"
+    frameborder="no">
+  </iframe>
+
+  <iframe
+    class="cell-3"
+        scrolling="no"
+    frameborder="no"
+    src="cardapio.html"
+    title="Iframe 3">
+  </iframe>
+
+  <iframe
+    class="cell-4"
+    scrolling="no"
+    frameborder="no"
+    clocktype="html5"
+    src="clock.html">
+  </iframe>
+
+  <iframe
+    class="cell-5"
+    src="about:blank"
+    title="Iframe 5">
+  </iframe>
+
+</div>
+
+<script>
+  function navegar(url) {
+    const frame = document.getElementById("browserFrame");
+
+    if (!/^https?:\/\//i.test(url)) {
+      url = "https://" + url;
+    }
+
+    frame.src = url;
+  }
+
+  // Exemplo:
+  navegar("https://geekdot.live/noar/");
+
+  function recarregarAMeiaNoite() {
+    const agora = new Date();
+    const amanha = new Date();
+
+    // Define a data de amanhã para a meia-noite (00:00:00)
+    amanha.setDate(agora.getDate() + 1);
+    amanha.setHours(0, 0, 0, 0);
+
+    // Calcula a diferença em milissegundos
+    const tempoAteMeiaNoite = amanha - agora;
+
+    // Agenda o reset da página
+    setTimeout(() => {
+        window.location.reload();
+    }, tempoAteMeiaNoite);
+}
+
+// Inicia a função
+recarregarAMeiaNoite();
+
+</script>
+
+</body>
+</html>
