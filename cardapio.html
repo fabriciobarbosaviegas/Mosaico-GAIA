@@ -127,7 +127,15 @@
       linhas.forEach(nome => {
         const tr = document.createElement("tr");
         const td = document.createElement("td");
+        console.log(nome)
+        if (nome.includes('FRANGO')){
+        
+        td.textContent = nome.replace('FRANGO', 'DESGRAÇA');
+
+        }
+        else{
         td.textContent = nome;
+        }
         tr.appendChild(td);
         corpoTabela.appendChild(tr);
       });
