@@ -20,6 +20,21 @@ background: linear-gradient(rgba(0, 0, 0, 1) 0%, rgba(87, 93, 199, 0.69) 50%, rg
         Mais previsões: <a href="https://tempolongo.com/rio_de_janeiro_tempo_25_dias/" id="ww_b97fc6842af74_u"
             target="_blank">Weather Rio de Janeiro 30 days</a></div>
     <script async src="https://app3.weatherwidget.org/js/?id=ww_b97fc6842af74"></script>
+    <script>
+        function recarregarA_Cada30Minutos() {
+    // 30 minutos = 30 * 60 segundos * 1000 milissegundos
+    const trintaMinutos = 30 * 60 * 1000; 
+
+    // Agenda o recarregamento contínuo a cada 30 minutos
+    setInterval(() => {
+        window.location.reload();
+    }, trintaMinutos);
+}
+
+// Inicia a execução do loop
+recarregarA_Cada30Minutos();
+
+    </script>
 </body>
 
 </html>
