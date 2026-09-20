@@ -241,9 +241,14 @@
       if (!resposta.ok) throw new Error(`Erro HTTP ${resposta.status}`);
 
       const textoCSV = await resposta.text();
-      const registros = parseCSV(textoCSV);
+      const registros = parseCSV(textoCSV).filter(reg => {
+        const data = parseDataBR(reg.Data);
+        const hoje = new Date();
+        hoje.setHours(0, 0, 0, 0);
+        return data >= hoje;
+      });
 
-      // Ordena por data
+      // Exibe apenas eventos de hoje em diante e ordena por data
       registros.sort((a, b) => parseDataBR(a.Data) - parseDataBR(b.Data));
 
       if (registros.length === 0) {
